@@ -1,0 +1,108 @@
+@font-face {
+    font-family: "MADE Outer";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("outer-regular.otf");
+}
+@font-face {
+    font-family: "MADE Outer";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("outer-medium.otf");
+}
+@font-face {
+    font-family: "MADE Outer";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("outer-bold.otf");
+}
+@font-face {
+    font-family: "MADE Outer";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url("outer-light.otf");
+}
+@font-face {
+    font-family: "MADE Outer";
+    font-style: normal;
+    font-weight: 200;
+    font-display: swap;
+    src: url("outer-thin.otf");
+}
+
+/* UTM */
+@font-face {
+    font-family: "UTM Banque";
+    font-style: normal;
+    font-weight: normal;
+    font-display: swap;
+    src: url("UTM-BanqueRegular.ttf");
+}
+@font-face {
+    font-family: "UTM Banque";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("UTM-BanqueMedium.ttf");
+}
+/* Helvetica Neue  ultr-light thin light roman medium bold heavy black*/
+/* @font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    src: url("HelveticaNeueUltraLight.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 200;
+    font-display: swap;
+    src: url("HelveticaNeueThin.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url("HelveticaNeueLight.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("HelveticaNeueRoman.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("HelveticaNeueMedium.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("HelveticaNeueBold.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("HelveticaNeueHeavy.otf");
+}
+@font-face {
+    font-family: "Helvetica Neue";
+    font-style: normal;
+    font-weight: 800;
+    font-display: swap;
+    src: url("HelveticaNeueBlack.otf");
+} */

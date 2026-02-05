@@ -1,0 +1,107 @@
+@use "../abstracts/mixin";
+@use "../abstracts/variable";
+
+// image select
+
+.select-category {
+    .dropdown_product_cat {
+        display: none;
+    }
+
+    .close-option {
+        cursor: pointer;
+        @include mixin.transition3;
+
+        &:hover {
+            color: var(--primary);
+        }
+    }
+
+    .select-options {
+        overflow-y: auto;
+        display: none;
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        left: -3px;
+        z-index: 999;
+        margin: 0;
+        padding: 20px;
+        list-style: none;
+        border-radius: 8px;
+        background: #FFF;
+        box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.05);
+        min-width: 200px;
+
+        li {
+            display: inline-block;
+            width: 32.88%;
+            color: var(--gray);
+            margin: 0;
+            font-size: 13px;
+            font-style: normal;
+            font-weight: 500;
+            padding: 8px 10px;
+            position: relative;
+            cursor: pointer;
+            @include mixin.transition3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            &:hover {
+                color: var(--primary);
+            }
+        }
+    }
+
+    .header-select-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 15px;
+        font-weight: 500;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #ededed;
+        margin-bottom: 8px;
+    }
+}
+
+.tf-select-custom {
+    display: block;
+    cursor: pointer;
+    width: 108px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 15px;
+    font-size: 13px;
+    line-height: 25px;
+    color: var(--text-2);
+    position: relative;
+    font-weight: 600;
+
+    &::after {
+        content: "\e918";
+        position: absolute;
+        font-family: variable.$fontIcon;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}
+
+.select-color {
+    border: 1px solid var(--gray-4);
+    padding: 11px 10px;
+    border-radius: 8px;
+    min-width: 216px;
+    appearance: none;
+    position: relative;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    cursor: pointer;
+}
+
+.flat-select {}

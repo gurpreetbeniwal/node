@@ -1,0 +1,113 @@
+@use "../abstracts/mixin";
+
+.widget-accordion {
+  .accordion-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 6px 50px 6px 0px;
+    font-weight: 600;
+    cursor: pointer;
+
+    .icon {
+      @include mixin.transition3;
+    }
+
+    &:not(.collapsed) {
+      .icon {
+        background-color: var(--primary);
+
+        &::before {
+          transform: rotate(90deg);
+          opacity: 0;
+        }
+
+        &::after {
+          background-color: var(--white);
+        }
+      }
+    }
+  }
+
+  .accordion-body {
+    padding: 10px 0px 30px;
+  }
+}
+
+// faq
+.faq-item {
+  display: grid;
+  gap: 30px;
+}
+
+.faq-wrap {
+  .widget-accordion {
+    &:not(:last-child) {
+      .accordion-title {
+        &.collapsed {
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--gray-5);
+          margin-bottom: 10px;
+        }
+      }
+    }
+  }
+
+  .accordion-title {
+    position: relative;
+    @include mixin.transition3;
+    border-color: var(--white);
+
+    .title-sidebar {
+      @include mixin.transition3;
+    }
+
+    &:not(.collapsed) {
+      .title-sidebar {
+        color: var(--primary);
+      }
+    }
+
+    .icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background-color: var(--gray-6);
+      @include mixin.flex(center, center);
+      position: absolute;
+      top: -2px;
+      right: -2px;
+
+      &::after {
+        @include mixin.transition3;
+        content: "";
+        position: absolute;
+        width: 11.25px;
+        height: 2px;
+        border-radius: 1px;
+        background-color: var(--gray);
+      }
+
+      &::before {
+        @include mixin.transition3;
+        content: "";
+        position: absolute;
+        height: 11.25px;
+        width: 2px;
+        border-radius: 1px;
+        background-color: var(--gray);
+      }
+    }
+  }
+
+  .accordion-body {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+
+    i {
+      font-size: 30px;
+    }
+  }
+}

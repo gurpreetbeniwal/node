@@ -1,0 +1,38 @@
+@use "../abstracts/mixin";
+
+.box-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    @include mixin.transition3;
+    cursor: pointer;
+}
+
+.tf-icon-box {
+    border-radius: 8px;
+    border: 1px solid var(--gray-5);
+    padding: 19px 20px;
+    display: flex;
+    gap: 20px;
+
+    .icon-box {
+        transition-duration: .5s;
+
+        i {
+            font-size: 30px;
+        }
+    }
+
+    .content {
+        display: grid;
+        gap: 3px;
+    }
+
+    &:hover {
+        .icon-box {
+            transform: scale(1.2);
+            transition-timing-function: cubic-bezier(0.47, 2.02, .31, -.36);
+        }
+
+    }
+}

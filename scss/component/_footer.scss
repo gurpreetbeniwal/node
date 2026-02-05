@@ -1,0 +1,147 @@
+@use "../abstracts/mixin";
+
+.tf-footer {
+  .ft-body-inner {
+    background-color: var(--bg);
+    padding: 50px 0px;
+  }
+}
+
+.ft-inner {
+  display: flex;
+  gap: 30px;
+
+  .ft-logo {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex-shrink: 0;
+  }
+}
+
+.method-list {
+  display: flex;
+  gap: 20px;
+}
+
+.ft-link-wrap {
+  gap: 30px;
+
+  .footer-col-block {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .ft-menu-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ft-contact-list {
+    li {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+    }
+
+    .icon {
+      display: block;
+      position: relative;
+      padding-right: 8px;
+
+      &::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        height: 16px;
+        width: 1px;
+        background-color: var(--line-3);
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0.2;
+      }
+    }
+  }
+}
+
+.ft-body-center {
+  .ft-center {
+    padding: 18px 0px;
+    gap: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    .form-newsletter {
+      max-width: 566px;
+      width: 100%;
+
+      fieldset {
+        width: 100%;
+      }
+
+      input {
+        width: 100%;
+      }
+    }
+  }
+
+  .notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px 30px;
+    flex-wrap: wrap;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
+}
+
+.ft-bottom {
+  padding: 50px 0px;
+  display: grid;
+  gap: 12px;
+
+  .ft-menu-list-2 {
+    @include mixin.flex(center, center);
+    flex-wrap: wrap;
+    gap: 10px 30px;
+  }
+}
+
+.social-list {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+
+  a {
+    width: 35px;
+    height: 35px;
+    @include mixin.flex(center, center);
+    border-radius: 50%;
+    border: 1px solid var(--gray-5);
+    background-color: var(--white);
+
+    &:hover {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+    }
+  }
+
+  &.style-2 {
+    gap: 10px;
+
+    a {
+      width: 36px;
+      height: 36px;
+    }
+  }
+}

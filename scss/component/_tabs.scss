@@ -1,0 +1,283 @@
+.flat-animate-tab {
+  .tab-content {
+    position: relative;
+  }
+
+  .tab-pane {
+    display: block;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    right: 0;
+    -webkit-transform: translateY(30px);
+    -ms-transform: translateY(30px);
+    transform: translateY(30px);
+    transition-timing-function: ease-in;
+    transition-duration: 0.2s;
+
+    &.active {
+      pointer-events: auto;
+      opacity: 1;
+      visibility: visible;
+      position: relative;
+      z-index: 2;
+      -webkit-transform: none;
+      -ms-transform: none;
+      transform: none;
+      transition-timing-function: ease-out;
+      transition-duration: 0.3s;
+      transition-delay: 0.3s;
+    }
+  }
+
+  .flat-title-tab-default {
+    .menu-tab-line {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .tab-link {
+      &.active {
+        color: var(--primary);
+      }
+    }
+  }
+}
+
+.flat-title-tab-nav-mobile {
+  margin-bottom: 20px;
+
+  .menu-tab-line {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+  }
+
+  .nav-tab-item {
+    text-align: center;
+    width: 100%;
+
+    a {
+      &.active {
+        color: var(--primary);
+      }
+    }
+  }
+}
+
+.flat-title-tab-product-des {
+  border-radius: 6px;
+  border: 1px solid var(--gray-5);
+
+  .flat-title-tab {
+    background-color: var(--gray-6);
+  }
+
+  .menu-tab-line {
+    padding: 13px 18px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    white-space: nowrap;
+    overflow: auto;
+
+    .tab-link {
+      &:hover {
+        color: var(--secondary);
+      }
+
+      &.active {
+        color: var(--secondary);
+      }
+    }
+  }
+
+  .tab-main {
+    padding: 30px;
+  }
+
+  .box-total-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 200px;
+    width: 100%;
+  }
+
+  .card-usually {
+    max-width: 251px;
+    width: 100%;
+  }
+}
+
+.list-feature {
+  > li {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    &:not(:last-child) {
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--gray-5);
+      margin-bottom: 4px;
+    }
+  }
+
+  .name-feature {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 22px;
+    max-width: 236px;
+    width: 100%;
+    flex-grow: 2;
+  }
+
+  .property {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    width: 100%;
+    flex-grow: 1;
+  }
+}
+
+.tab-usually {
+  display: flex;
+  gap: 20px 30px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tab-des {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  align-items: center;
+}
+
+.tab-review {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+
+  .tab-rating-wrap {
+    width: 100%;
+  }
+
+  .tab-review-wrap {
+    width: 100%;
+  }
+
+  .add-comment-wrap {
+    h5 {
+      margin-bottom: 30px;
+    }
+  }
+
+  &.style-2 {
+    gap: 30px;
+
+    .tab-rating-wrap {
+      flex-wrap: wrap;
+      padding-bottom: 30px;
+      border-radius: unset;
+      border-bottom: 1px solid var(--gray-5);
+    }
+
+    .tab-review-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 30px 40px;
+    }
+  }
+}
+
+.tab-rating-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.rating-progress-list {
+  display: grid;
+  gap: 10px;
+
+  p {
+    flex-grow: 1;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .rating-progress {
+    width: 100%;
+  }
+}
+
+.rating-filter-wrap {
+  .title-sidebar {
+    margin-bottom: 12px;
+  }
+}
+
+.rating-filter-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  a {
+    padding: 5px 20px;
+    border-radius: 18px;
+    background-color: var(--gray-6);
+
+    &:hover,
+    &.active {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+  }
+}
+
+.flat-title-tab-faq {
+  .tf-title {
+    position: relative;
+    padding-bottom: 28px;
+    margin-bottom: 30px;
+
+    &::after {
+      content: "";
+      bottom: 0;
+      left: 0;
+      position: absolute;
+      max-width: 123px;
+      width: 100%;
+      height: 2px;
+      background-color: var(--primary);
+    }
+  }
+
+  .menu-tab-line {
+    display: grid;
+    gap: 16px;
+  }
+
+  .tab-link {
+    &.active,
+    &:hover {
+      font-weight: 600;
+      color: var(--primary);
+    }
+  }
+}

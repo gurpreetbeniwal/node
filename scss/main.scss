@@ -1,0 +1,64 @@
+// Fonts
+@use "../fonts/font.css";
+@use "../icons/icomoon/style.css";
+
+// CSS Libraries
+@use "../css/bootstrap.min.css";
+@use "../css/swiper-bundle.min.css";
+@use "../css/animate.css";
+
+// Main Styles
+@use "app.scss";
+@keyframes infiniteslider {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(-1272px, 0, 0);
+  }
+}
+.infiniteslide_wrap:hover {
+  .infiniteslide {
+    animation-play-state: paused !important;
+  }
+}
+.zoom-magnifier-containing .drift-zoom-pane {
+  border-radius: 50%;
+  width: 150px !important;
+  height: 150px !important;
+  overflow: hidden;
+}
+.tfSubscribeMsg {
+  display: none;
+  max-height: 0px;
+  // transition: 0.4s;
+  overflow: hidden;
+  &.active {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    max-height: 180px;
+    display: block;
+  }
+}
+@media only screen and (max-width: 767px) {
+  .footer-col-block .tf-collapse-content {
+    overflow-y: hidden;
+    display: block;
+    height: 0;
+    transition: 0.5s;
+  }
+}
+.tf-grid-product.sliders {
+  @media (max-width: 1199px) {
+    row-gap: 60px;
+  }
+  @media (max-width: 700px) {
+    row-gap: 40px;
+  }
+}
+@media (max-width: 767px) {
+  .sm-pt--30 {
+    padding-top: 30px;
+  }
+}
