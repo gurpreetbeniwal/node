@@ -1,0 +1,383 @@
+<%- include('./navbar') %>
+
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>
+            <%= title %>
+        </title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background-color: #f8f9fa;
+                margin: 0;
+                padding: 20px;
+                color: #343a40;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: auto;
+                background: #fff;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            }
+
+            h1 {
+                color: #333;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+
+            th,
+            td {
+                padding: 12px 15px;
+                border: 1px solid #dee2e6;
+                text-align: left;
+            }
+
+            th {
+                background-color: #f8f9fa;
+            }
+
+            a {
+                color: #007bff;
+                text-decoration: none;
+            }
+
+            .status {
+                padding: 4px 8px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+
+            .status-pending {
+                background-color: #fff3cd;
+                color: #856404;
+            }
+
+            .status-processing {
+                background-color: #cce5ff;
+                color: #004085;
+            }
+
+            .status-shipped {
+                background-color: #d1ecf1;
+                color: #0c5460;
+            }
+
+            .status-delivered {
+                background-color: #d4edda;
+                color: #155724;
+            }
+
+            .status-cancelled {
+                background-color: #f8d7da;
+                color: #721c24;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>Manage Orders</h1>
+            <a href="/admin/dashboard">Back to Dashboard</a>
+            <div
+                style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                <form action="/admin/orders" method="GET"
+                    style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="filterStatus" style="font-weight: 500; display: block; margin-bottom: 5px;">Order
+                            Status:</label>
+                        <select name="status" id="filterStatus"
+                            style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                            <option value="">All Orders</option>
+                            <option value="pending" <%=filters.status==='pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="processing" <%=filters.status==='processing' ? 'selected' : '' %>>Processing
+                            </option>
+                            <option value="shipped" <%=filters.status==='shipped' ? 'selected' : '' %>>Shipped</option>
+                            <option value="delivered" <%=filters.status==='delivered' ? 'selected' : '' %>>Delivered
+                            </option>
+                            <option value="cancelled" <%=filters.status==='cancelled' ? 'selected' : '' %>>Cancelled
+                            </option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 200px;">
+                        <label for="filterPayment" style="font-weight: 500; display: block; margin-bottom: 5px;">Payment
+                            Status:</label>
+                        <select name="payment_status" id="filterPayment"
+                            style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                            <option value="">All Payments</option>
+                            <option value="pending" <%=filters.payment_status==='pending' ? 'selected' : '' %>>Pending
+                            </option>
+                            <option value="completed" <%=filters.payment_status==='completed' ? 'selected' : '' %>
+                                >completed
+                            </option>
+                            <option value="failed" <%=filters.payment_status==='failed' ? 'selected' : '' %>>Failed
+                            </option>
+                            <!-- <option value="refunded" <%=filters.payment_status==='refunded' ? 'selected' : '' %>
+                                >Refunded</option> -->
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary"
+                            style="background-color: #007bff; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer;">Filter</button>
+                        <a href="/admin/orders" class="btn btn-secondary"
+                            style="background-color: #6c757d; color: white; padding: 8px 20px; border-radius: 4px; text-decoration: none; display: inline-block;">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Payment Status</th>
+                        <th>Order Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (orders.length> 0) { %>
+                        <% orders.forEach(order=> { %>
+                            <tr>
+                                <td>#<%= order.id %>
+                                </td>
+                                <td>
+                                    <%= order.User.first_name %>
+                                        <%= order.User.last_name %>
+                                </td>
+                                <td>
+                                    <%= new Date(order.created_at).toLocaleDateString() %>
+                                </td>
+                                <td>₹<%= parseFloat(order.total_amount).toFixed(2) %>
+                                </td>
+                                <td><span class="status status-<%= order.payment_status %>">
+                                        <%= order.payment_status %>
+                                    </span></td>
+                                <td><span class="status status-<%= order.order_status %>">
+                                        <%= order.order_status %>
+                                    </span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-info view-details-btn" data-id="<%= order.id %>"
+                                        style="background-color: #17a2b8; color: white;">View Details</button>
+                                </td>
+                            </tr>
+                            <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="7">No orders found.</td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Order Details Modal -->
+        <div id="orderModal"
+            style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+            <div
+                style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 900px; border-radius: 8px;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Order Details #<span id="modalOrderId"></span></h2>
+                    <span onclick="closeOrderModal()"
+                        style="cursor: pointer; font-size: 24px; font-weight: bold;">&times;</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                        <h3
+                            style="margin-top: 0; font-size: 16px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+                            Customer Info</h3>
+                        <p><strong>Name:</strong> <span id="customerName"></span></p>
+                        <p><strong>Email:</strong> <span id="customerEmail"></span></p>
+                        <p><strong>Phone:</strong> <span id="customerPhone"></span></p>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                        <h3
+                            style="margin-top: 0; font-size: 16px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">
+                            Shipping Address</h3>
+                        <p id="shippingAddress"></p>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 18px; margin-bottom: 10px;">Order Items</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #e9ecef;">
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">Product</th>
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">SKU</th>
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">Attributes</th>
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">Price</th>
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">Qty</th>
+                                <th style="padding: 8px; border: 1px solid #dee2e6;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemsBody">
+                            <!-- Items will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: #e9ecef; padding: 20px; border-radius: 5px; margin-top: 20px;">
+                    <h3 style="margin-top: 0; font-size: 18px; margin-bottom: 15px;">Update Status</h3>
+                    <form id="updateStatusForm" style="display: flex; gap: 20px; align-items: flex-end;">
+                        <div style="flex: 1;">
+                            <label for="orderStatus" style="display: block; margin-bottom: 5px; font-weight: 500;">Order
+                                Status</label>
+                            <select id="orderStatus" name="order_status"
+                                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ced4da;">
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="paymentStatus"
+                                style="display: block; margin-bottom: 5px; font-weight: 500;">Payment Status</label>
+                            <select id="paymentStatus" name="payment_status"
+                                style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ced4da;">
+                                <option value="pending">Pending</option>
+                                <option value="completed">Completed</option>
+                                <option value="failed">Failed</option>
+                                <!-- <option value="refunded">Refunded</option> -->
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="height: 38px;">Update Status</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const modal = document.getElementById("orderModal");
+            const detailsBtns = document.querySelectorAll(".view-details-btn");
+            let currentOrderId = null;
+
+            detailsBtns.forEach(btn => {
+                btn.onclick = function () {
+                    const orderId = this.getAttribute("data-id");
+                    openOrderModal(orderId);
+                }
+            });
+
+            function closeOrderModal() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function (event) {
+                if (event.target == modal) {
+                    closeOrderModal();
+                }
+            }
+
+            async function openOrderModal(orderId) {
+                currentOrderId = orderId;
+                document.getElementById('modalOrderId').innerText = orderId;
+
+                // Show loading or clear previous data
+                document.getElementById('orderItemsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
+                modal.style.display = "block";
+
+                try {
+                    const response = await fetch(`/admin/orders-data/${orderId}`);
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const order = data.order;
+                        const user = order.User || {};
+                        const address = order.ShippingAddress || {};
+
+                        // Populate Customer Info
+                        document.getElementById('customerName').innerText = `${user.first_name || ''} ${user.last_name || ''}`;
+                        document.getElementById('customerEmail').innerText = user.email || 'N/A';
+                        document.getElementById('customerPhone').innerText = user.phone_number || 'N/A';
+
+                        // Populate Address
+                        document.getElementById('shippingAddress').innerHTML = `
+                        ${address.street_address || ''}, ${address.apartment ? address.apartment + ', ' : ''}<br>
+                        ${address.city || ''}, ${address.state || ''} ${address.postal_code || ''}<br>
+                        ${address.country || ''}
+                    `;
+
+                        // Populate Products
+                        const tbody = document.getElementById('orderItemsBody');
+                        tbody.innerHTML = '';
+                        const orderItems = order.OrderItems || [];
+                        orderItems.forEach(item => {
+                            const variant = item.ProductVariant || {};
+                            const product = variant.Product || {};
+                            const attributes = variant.AttributeValues ? variant.AttributeValues.map(av => `${av.Attribute.name}: ${av.value}`).join(', ') : 'N/A';
+
+                            // Use snapshot name if product relation fails, or product name
+                            const productName = product.name || item.product_name_snapshot || 'Unknown Product';
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${productName}</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${variant.sku || 'N/A'}</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${attributes}</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">₹${parseFloat(item.price_at_purchase || item.price || 0).toFixed(2)}</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">${item.quantity}</td>
+                            <td style="padding: 8px; border: 1px solid #dee2e6;">₹${(parseFloat(item.price_at_purchase || item.price || 0) * item.quantity).toFixed(2)}</td>
+                        `;
+                            tbody.appendChild(tr);
+                        });
+
+                        // Set Status Dropdowns
+                        document.getElementById('orderStatus').value = order.order_status;
+                        document.getElementById('paymentStatus').value = order.payment_status;
+
+                    } else {
+                        alert('Failed to load order details');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error fetching order details');
+                }
+            }
+
+            document.getElementById('updateStatusForm').onsubmit = async function (e) {
+                e.preventDefault();
+                if (!currentOrderId) return;
+
+                const orderStatus = document.getElementById('orderStatus').value;
+                const paymentStatus = document.getElementById('paymentStatus').value;
+
+                try {
+                    const response = await fetch(`/admin/orders/update-status/${currentOrderId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_status: orderStatus, payment_status: paymentStatus })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Status updated successfully!');
+                        location.reload(); // Reload to show updated status in table
+                    } else {
+                        alert('Failed to update status: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error updating status');
+                }
+            };
+        </script>

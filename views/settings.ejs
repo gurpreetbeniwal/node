@@ -1,0 +1,67 @@
+    <%- include('./navbar') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #374151; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .form-group .description {
+            font-size: 0.875rem;
+            color: #6B7280;
+            margin-top: 0.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-primary { background-color: #4F46E5; color: white; }
+        .btn-primary:hover { background-color: #4338CA; }
+        .container { max-width: 800px; margin: 2rem auto; padding: 2rem; background-color: #fff; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container">
+        <a href="/admin/dashboard" class="text-indigo-600 hover:text-indigo-800 mb-4 inline-block">&larr; Back to Dashboard</a>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6"><%= title %></h1>
+        
+        <form action="/admin/settings" method="POST">
+            <% settings.forEach(setting => { %>
+                <div class="form-group">
+                    <label for="<%= setting.setting_key %>">
+                        <%= setting.setting_key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') %>
+                    </label>
+
+                    <% if (setting.setting_key === 'cod_enabled') { %>
+                        <select id="<%= setting.setting_key %>" name="<%= setting.setting_key %>">
+                            <option value="true" <%= setting.setting_value === 'true' ? 'selected' : '' %>>Enabled</option>
+                            <option value="false" <%= setting.setting_value === 'false' ? 'selected' : '' %>>Disabled</option>
+                        </select>
+                    <% } else { %>
+                        <input type="text" id="<%= setting.setting_key %>" name="<%= setting.setting_key %>" value="<%= setting.setting_value %>">
+                    <% } %>
+
+                    <p class="description"><%= setting.description %></p>
+                </div>
+            <% }); %>
+
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </form>
+    </div>
+</body>
+</html>
+

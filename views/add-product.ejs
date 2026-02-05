@@ -1,0 +1,151 @@
+    <%- include('./navbar') %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; color: #343a40; }
+        .container { max-width: 900px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { margin-bottom: 25px; }
+        nav { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #dee2e6; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; font-weight: 500; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; }
+        input[type="text"], input[type="number"], input[type="file"], select, textarea {
+            width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ced4da; box-sizing: border-box; transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        }
+        input:focus, select:focus, textarea:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); }
+        textarea { min-height: 120px; resize: vertical; }
+        .btn { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 500; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .section-header { margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #e9ecef; }
+        .variation-card { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin-bottom: 15px; position: relative; }
+        .variation-card .btn-danger { position: absolute; top: 15px; right: 15px; padding: 5px 10px; font-size: 12px; }
+        .attribute-item { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="/admin/dashboard">Dashboard</a>
+            <a href="/admin/products">Products</a>
+        </nav>
+        <h1><%= title %></h1>
+        
+        <form action="/admin/products/add" method="POST" enctype="multipart/form-data">
+            <!-- Basic Product Info -->
+            <div class="form-group">
+                <label for="name">Product Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="brand">Brand</label>
+                <input type="text" id="brand" name="brand">
+            </div>
+            <div class="form-group">
+                <label for="category_id">Category</label>
+                <select id="category_id" name="category_id" required>
+                    <option value="">Select a Category</option>
+                    <% categories.forEach(category => { %>
+                        <option value="<%= category.id %>"><%= category.name %></option>
+                    <% }); %>
+                </select>
+            </div>
+
+            <!-- Product Media -->
+            <h2 class="section-header">Media</h2>
+            <div class="form-group">
+                <label for="product_media">Images & Videos (up to 10)</label>
+                <input type="file" id="product_media" name="product_media" multiple>
+            </div>
+
+            <!-- Product Variations -->
+            <h2 class="section-header">Variations</h2>
+            <div id="variations-container">
+                <!-- Dynamic variations will be added here -->
+            </div>
+            <button type="button" id="add-variation-btn" class="btn btn-secondary">Add Variation</button>
+
+            <hr style="margin: 30px 0;">
+
+            <button type="submit" class="btn btn-primary">Save Product</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addVariationBtn = document.getElementById('add-variation-btn');
+            const variationsContainer = document.getElementById('variations-container');
+            let variationIndex = 0;
+
+            addVariationBtn.addEventListener('click', () => {
+                const variationId = variationIndex;
+                const variationCard = document.createElement('div');
+                variationCard.classList.add('variation-card');
+                variationCard.id = `variation-${variationId}`;
+                
+                variationCard.innerHTML = `
+                    <button type="button" class="btn btn-danger remove-variation-btn" data-id="${variationId}">Remove</button>
+                    <h4>Variation #${variationId + 1}</h4>
+                    <div class="form-group">
+                        <label for="variation_${variationId}_sku">SKU</label>
+                        <input type="text" id="variation_${variationId}_sku" name="variations[${variationId}][sku]" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="variation_${variationId}_price">Price</label>
+                        <input type="number" id="variation_${variationId}_price" name="variations[${variationId}][price]" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="variation_${variationId}_stock">Stock Quantity</label>
+                        <input type="number" id="variation_${variationId}_stock" name="variations[${variationId}][stock_quantity]" required>
+                    </div>
+                    <h5>Attributes</h5>
+                    <div id="attributes-container-${variationId}"></div>
+                    <button type="button" class="btn btn-secondary btn-sm add-attribute-btn" data-id="${variationId}">Add Attribute</button>
+                `;
+
+                variationsContainer.appendChild(variationCard);
+                variationIndex++;
+            });
+
+            variationsContainer.addEventListener('click', (e) => {
+                // Handle removing a variation
+                if (e.target.classList.contains('remove-variation-btn')) {
+                    const id = e.target.dataset.id;
+                    document.getElementById(`variation-${id}`).remove();
+                }
+
+                // Handle adding an attribute
+                if (e.target.classList.contains('add-attribute-btn')) {
+                    const id = e.target.dataset.id;
+                    const attributesContainer = document.getElementById(`attributes-container-${id}`);
+                    const attributeIndex = attributesContainer.children.length;
+
+                    const attributeItem = document.createElement('div');
+                    attributeItem.classList.add('attribute-item');
+                    attributeItem.innerHTML = `
+                        <input type="text" name="variations[${id}][attributes][${attributeIndex}][name]" placeholder="Attribute Name (e.g., Color)" required>
+                        <input type="text" name="variations[${id}][attributes][${attributeIndex}][value]" placeholder="Attribute Value (e.g., Red)" required>
+                        <button type="button" class="btn btn-danger btn-sm remove-attribute-btn">X</button>
+                    `;
+                    attributesContainer.appendChild(attributeItem);
+                }
+
+                // Handle removing an attribute
+                if (e.target.classList.contains('remove-attribute-btn')) {
+                    e.target.parentElement.remove();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

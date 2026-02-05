@@ -1,0 +1,940 @@
+<%- include('./navbar') %>
+
+    <script>
+        // Festival Data for JavaScript - Define globally
+        window.festivalsData = <%- JSON.stringify(festivals || []) %>;
+
+
+
+
+        // Define functions globally
+        function openEditModal(festivalId) {
+            try {
+                const festival = window.festivalsData.find(f => f.id === festivalId);
+                if (!festival) {
+                    console.error("Festival not found:", festivalId);
+                    return;
+                }
+
+                document.getElementById('edit_name').value = festival.name;
+                document.getElementById('edit_description').value = festival.description || '';
+
+                // Helper to format date for datetime-local input (YYYY-MM-DDTHH:mm)
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toISOString().slice(0, 16);
+                };
+
+                document.getElementById('edit_pre_booking_start_time').value = formatDate(festival.pre_booking_start_time);
+                document.getElementById('edit_pre_booking_end_time').value = formatDate(festival.pre_booking_end_time);
+                document.getElementById('edit_start_time').value = formatDate(festival.start_time);
+                document.getElementById('edit_end_time').value = formatDate(festival.end_time);
+
+                document.getElementById('edit_pre_booking_amount').value = festival.pre_booking_amount;
+                document.getElementById('edit_pre_booking_type').value = festival.pre_booking_type;
+
+                document.getElementById('editFestivalForm').action = `/admin/mega-offer/${festivalId}/update`;
+                document.getElementById('editFestivalModal').style.display = 'block';
+            } catch (e) {
+                console.error("Error opening edit modal:", e);
+                alert("Failed to open edit modal. Check console for details.");
+            }
+        }
+
+        function openManageTiersModal(festivalId) {
+            try {
+                const festival = window.festivalsData.find(f => f.id === festivalId);
+                if (!festival) {
+                    console.error("Festival not found for tiers:", festivalId);
+                    return;
+                }
+
+                document.getElementById('addTierForm').action = `/admin/mega-offer/${festivalId}/tier/add`;
+
+                const tiersList = document.getElementById('tiersList');
+                tiersList.innerHTML = '<h5 style="margin: 0 0 12px 0; font-size: 14px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Current Tiers</h5>';
+
+                if (festival.tiers && festival.tiers.length > 0) {
+                    festival.tiers.forEach(tier => {
+                        const tierDiv = document.createElement('div');
+                        tierDiv.style.cssText = 'background:white; border:1px solid #e5e7eb; padding:16px; border-radius:10px; display: flex; justify-content: space-between; align-items: center; gap: 16px;';
+
+                        const statusColor = tier.status === 'completed' ? '#10b981' : tier.status === 'active' ? '#3b82f6' : '#f59e0b';
+                        const statusBg = tier.status === 'completed' ? '#ecfdf5' : tier.status === 'active' ? '#eff6ff' : '#fffbeb';
+
+                        tierDiv.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <strong style="font-size: 16px; color: #111827;">${tier.tier_name}</strong>
+                                <span style="background:${statusBg}; color:${statusColor}; padding:2px 8px; border-radius:6px; font-size:11px; font-weight: 700; text-transform: uppercase;">${tier.status}</span>
+                            </div>
+                            <div style="font-size: 13px; color: #6b7280; display: flex; gap: 12px; align-items: center;">
+                                <span style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #374151;"><strong>${tier.discount_percent}%</strong> OFF</span>
+                                <span>Entry: <strong>₹${tier.entry_fee}</strong></span>
+                                <span>Winners: <strong>${tier.max_winners || 'Unlimited'}</strong></span>
+                            </div>
+                            ${tier.start_time ? `<div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">⏰ ${new Date(tier.start_time).toLocaleString()} - ${tier.end_time ? new Date(tier.end_time).toLocaleString() : 'No End Date'}</div>` : ''}
+                        </div>
+                        
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="viewTierEntries(${tier.id})" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; font-weight: 500;">👥 Entries</button>
+                            <button onclick="openEditTierModal(${tier.id})" style="background:#fffbeb; color:#d97706; border:1px solid #fcd34d; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; font-weight: 500;">✏️ Edit</button>
+                            ${tier.status !== 'completed' ? `<button onclick="announceWinnersModal(${tier.id}, '${tier.tier_name}')" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; font-weight: 500;">🏆 Winners</button>` : ''}
+                            <button onclick="deleteTier(${festivalId}, ${tier.id})" style="background:white; color:#dc2626; border:1px solid #fee2e2; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;">🗑️</button>
+                        </div>
+                    `;
+                        tiersList.appendChild(tierDiv);
+                    });
+                } else {
+                    tiersList.innerHTML += `
+                    <div style="text-align: center; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px dashed #d1d5db;">
+                        <p style="color:#6b7280; margin: 0; font-size: 14px;">No tiers added yet. Add one above!</p>
+                    </div>
+                `;
+                }
+
+                document.getElementById('manageTiersModal').style.display = 'block';
+            } catch (e) {
+                console.error("Error opening tiers modal:", e);
+                alert("Failed to open tiers modal.");
+            }
+        }
+
+        function deleteTier(festivalId, tierId) {
+            if (confirm('Delete this tier?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/mega-offer/${festivalId}/tier/${tierId}/delete`;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function confirmDelete(festivalId) {
+            const festival = festivalsData.find(f => f.id === festivalId);
+            if (festival) {
+                document.getElementById('deleteFestivalName').textContent = festival.name;
+                document.getElementById('deleteFestivalForm').action = `/admin/mega-offer/${festivalId}/delete`;
+                document.getElementById('deleteConfirmModal').style.display = 'block';
+            } else {
+                console.error("Festival not found for deletion:", festivalId);
+            }
+        }
+
+        // View tier entries
+        async function viewTierEntries(tierId) {
+            try {
+                const response = await fetch(`/admin/mega-offer/tier/${tierId}/entries`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Failed to load entries');
+                    return;
+                }
+
+                let html = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:2000; display:flex; align-items:center; justify-content:center;" onclick="this.remove()">
+                    <div style="background:white; width:90%; max-width:800px; max-height:90vh; border-radius:16px; overflow:hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);" onclick="event.stopPropagation()">
+                        <div style="padding:20px 24px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background: #f9fafb;">
+                            <div>
+                                <h4 style="margin:0; font-size: 18px; color: #111827;">${data.tier.tier_name} - Entries</h4>
+                                <small style="color:#6b7280;">${data.tier.discount_percent}% discount | Max Winners: ${data.tier.max_winners || 'Unlimited'}</small>
+                            </div>
+                            <button onclick="this.closest('[style*=position]').remove()" style="background:none; border:none; font-size:24px; color: #9ca3af; cursor:pointer; padding: 0; line-height: 1;">×</button>
+                        </div>
+                        <div style="padding:20px; background:white; display:flex; gap:20px; justify-content:center; border-bottom: 1px solid #f3f4f6;">
+                            <div style="text-align:center; padding: 10px 20px; background: #eff6ff; border-radius: 10px;">
+                                <div style="font-size:24px; color:#2563eb; font-weight:bold;">${data.stats.total_entries}</div>
+                                <small style="color: #1e40af; font-weight: 600;">Total</small>
+                            </div>
+                            <div style="text-align:center; padding: 10px 20px; background: #ecfdf5; border-radius: 10px;">
+                                <div style="font-size:24px; color:#059669; font-weight:bold;">${data.stats.winners}</div>
+                                <small style="color: #065f46; font-weight: 600;">Winners</small>
+                            </div>
+                            <div style="text-align:center; padding: 10px 20px; background: #fef2f2; border-radius: 10px;">
+                                <div style="font-size:24px; color:#dc2626; font-weight:bold;">${data.stats.losers}</div>
+                                <small style="color: #991b1b; font-weight: 600;">Losers</small>
+                            </div>
+                            <div style="text-align:center; padding: 10px 20px; background: #fffbeb; border-radius: 10px;">
+                                <div style="font-size:24px; color:#d97706; font-weight:bold;">${data.stats.pending}</div>
+                                <small style="color: #92400e; font-weight: 600;">Pending</small>
+                            </div>
+                        </div>
+                        <div style="padding:0; max-height:400px; overflow-y:auto;">
+            `;
+
+                if (data.entries.length === 0) {
+                    html += '<div style="text-align:center; padding: 40px; color:#6b7280;">No entries yet</div>';
+                } else {
+                    html += '<table style="width:100%; border-collapse:collapse; font-size: 14px;"><thead><tr style="background:#f9fafb; border-bottom: 1px solid #e5e7eb;"><th style="padding:12px 24px; text-align:left; color: #6b7280; font-weight: 600;">User</th><th style="padding:12px 24px; text-align:left; color: #6b7280; font-weight: 600;">Email</th><th style="padding:12px 24px; text-align:right; color: #6b7280; font-weight: 600;">Fee Paid</th><th style="padding:12px 24px; text-align:center; color: #6b7280; font-weight: 600;">Status</th></tr></thead><tbody>';
+
+                    data.entries.forEach(entry => {
+                        const statusColor = entry.status === 'won' ? '#059669' : entry.status === 'lost' ? '#dc2626' : '#d97706';
+                        const statusBg = entry.status === 'won' ? '#ecfdf5' : entry.status === 'lost' ? '#fef2f2' : '#fffbeb';
+
+                        html += `<tr style="border-bottom:1px solid #f3f4f6;">
+                        <td style="padding:12px 24px; color: #111827; font-weight: 500;">${entry.user_name}</td>
+                        <td style="padding:12px 24px; color: #6b7280;">${entry.user_email}</td>
+                        <td style="padding:12px 24px; text-align:right; font-family: monospace;">₹${entry.entry_fee_paid}</td>
+                        <td style="padding:12px 24px; text-align:center;">
+                            <span style="background:${statusBg}; color:${statusColor}; padding:4px 10px; border-radius:9999px; font-size:12px; font-weight: 600; text-transform: uppercase;">${entry.status}</span>
+                        </td>
+                        <td style="padding:12px 24px; text-align:right;">
+                            <div style="display:flex; gap:6px; justify-content:flex-end;">
+                                ${entry.status !== 'won' ? `<button onclick="updateEntryStatus(${data.tier.id}, ${entry.id}, 'won')" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">Win</button>` : ''}
+                                ${entry.status !== 'lost' ? `<button onclick="updateEntryStatus(${data.tier.id}, ${entry.id}, 'lost')" style="background:#fef2f2; color:#dc2626; border:1px solid #fee2e2; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">Lose</button>` : ''}
+                                ${entry.status !== 'entered' ? `<button onclick="updateEntryStatus(${data.tier.id}, ${entry.id}, 'entered')" style="background:#fffbeb; color:#d97706; border:1px solid #fcd34d; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">Reset</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>`;
+                    });
+
+                    html += '</tbody></table>';
+                }
+
+                html += '</div></div></div>';
+
+                const modal = document.createElement('div');
+                modal.innerHTML = html;
+                document.body.appendChild(modal);
+            } catch (error) {
+                alert('Error loading entries: ' + error.message);
+            }
+        }
+
+        // Announce winners modal
+        function announceWinnersModal(tierId, tierName) {
+            const html = `
+            <div id="announceWinnersModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:2000; display:flex; align-items:center; justify-content:center;">
+                <div style="background:white; width:90%; max-width:500px; border-radius:16px; overflow:hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+                    <div style="padding:20px 24px; border-bottom:1px solid #e5e7eb; background: #f9fafb;">
+                        <h4 style="margin:0; font-size: 18px; color: #111827;">🏆 Announce Winners</h4>
+                        <small style="color:#6b7280; font-size: 13px;">${tierName}</small>
+                    </div>
+                    <form action="/admin/mega-offer/tier/${tierId}/announce-winners" method="POST" style="padding:24px;">
+                        <p style="margin-top: 0; color: #374151; font-weight: 500;">How many winners do you want to select?</p>
+                        <input type="number" name="winnerCount" min="1" placeholder="Leave empty for auto (30%)" style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; margin-bottom:16px; font-size: 14px;">
+                        <div style="background: #eff6ff; padding: 12px; border-radius: 8px; color: #1e40af; font-size: 13px; border: 1px solid #bfdbfe;">
+                            💡 <strong>Tip:</strong> Winners will be selected randomly. If you don't specify a count, 30% of entries will be selected as winners.
+                        </div>
+                        <div style="display:flex; gap:12px; justify-content:flex-end; margin-top:24px;">
+                            <button type="button" onclick="document.getElementById('announceWinnersModal').remove()" style="background:white; color:#374151; border:1px solid #d1d5db; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight: 500;">Cancel</button>
+                            <button type="submit" style="background:#10b981; color:white; border:none; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600;">🏆 Announce Winners</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+
+            const modal = document.createElement('div');
+            modal.innerHTML = html;
+            document.body.appendChild(modal);
+        }
+
+        // Update Entry Status
+        async function updateEntryStatus(tierId, entryId, status) {
+            if (!confirm(`Are you sure you want to mark this user as ${status.toUpperCase()}?`)) return;
+
+            try {
+                const response = await fetch(`/admin/mega-offer/tier/${tierId}/entry/${entryId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload entries to show updated status
+                    viewTierEntries(tierId);
+                } else {
+                    alert('Failed to update status: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status');
+            }
+        }
+
+        console.log("✅ All event handlers initialized successfully!");
+    </script>
+
+    <div
+        style="max-width: 1200px; margin: 0 auto; padding: 30px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1f2937;">
+
+        <!-- Header Section -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+            <div>
+                <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: #111827;">Mega
+                    Offer Festivals</h1>
+                <p style="margin: 8px 0 0; color: #6b7280; font-size: 15px;">Manage your seasonal campaigns,
+                    pre-bookings, and tier-based rewards.</p>
+            </div>
+            <button onclick="document.getElementById('createFestivalModal').style.display='block'"
+                style="background: #4f46e5; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); transition: all 0.2s;">
+                <span style="font-size: 20px; line-height: 1;">+</span> Create Festival
+            </button>
+        </div>
+
+        <!-- Festivals List -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <% if (festivals.length===0) { %>
+                <div
+                    style="text-align: center; padding: 60px; background: white; border-radius: 16px; border: 1px dashed #d1d5db;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                    <h3 style="margin: 0; color: #374151;">No festivals found</h3>
+                    <p style="color: #6b7280;">Create your first mega offer festival to get started.</p>
+                </div>
+                <% } %>
+
+                    <% festivals.forEach((festival, index)=> { %>
+                        <!-- Festival Card Item -->
+                        <div
+                            style="background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); overflow: hidden; border: 1px solid #f3f4f6; transition: transform 0.2s;">
+
+                            <!-- Top Row: Main Info & Status -->
+                            <div
+                                style="padding: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 1px solid #f9fafb;">
+                                <div style="display: flex; gap: 20px; align-items: flex-start;">
+                                    <!-- Status Icon Box -->
+                                    <div style="
+                            min-width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px;
+                            background: <%= festival.status === 'active' ? '#ecfdf5' : festival.status === 'ended' ? '#fef2f2' : '#fffbeb' %>;
+                            color: <%= festival.status === 'active' ? '#059669' : festival.status === 'ended' ? '#dc2626' : '#d97706' %>;
+                        ">
+                                        <%= festival.status==='active' ? '🚀' : festival.status==='ended' ? '🏁' : '⏳'
+                                            %>
+                                    </div>
+
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: #111827;">
+                                                <%= festival.name %>
+                                            </h3>
+                                            <span style="
+                                    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em;
+                                    background: <%= festival.status === 'active' ? '#10b981' : festival.status === 'ended' ? '#ef4444' : '#f59e0b' %>;
+                                    color: white;
+                                ">
+                                                <%= festival.status %>
+                                            </span>
+                                        </div>
+                                        <p
+                                            style="margin: 6px 0 0; color: #6b7280; font-size: 15px; line-height: 1.5; max-width: 650px;">
+                                            <%= festival.description || 'No description provided for this festival.' %>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons Toolbar -->
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <!-- Status Toggles -->
+                                    <% if (festival.status !=='active' ) { %>
+                                        <form action="/admin/mega-offer/<%= festival.id %>/status" method="POST"
+                                            style="margin:0;">
+                                            <input type="hidden" name="status" value="active">
+                                            <button type="submit" title="Activate Festival"
+                                                style="background: white; border: 1px solid #e5e7eb; color: #059669; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 18px;">▶️</button>
+                                        </form>
+                                        <% } %>
+                                            <% if (festival.status !=='ended' ) { %>
+                                                <form action="/admin/mega-offer/<%= festival.id %>/status" method="POST"
+                                                    style="margin:0;">
+                                                    <input type="hidden" name="status" value="ended">
+                                                    <button type="submit" title="End Festival"
+                                                        style="background: white; border: 1px solid #e5e7eb; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 18px;">⏹️</button>
+                                                </form>
+                                                <% } %>
+                                                    <% if (festival.status !=='scheduled' ) { %>
+                                                        <form action="/admin/mega-offer/<%= festival.id %>/status"
+                                                            method="POST" style="margin:0;">
+                                                            <input type="hidden" name="status" value="scheduled">
+                                                            <button type="submit" title="Set to Scheduled"
+                                                                style="background: white; border: 1px solid #e5e7eb; color: #d97706; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 18px;">📅</button>
+                                                        </form>
+                                                        <% } %>
+
+                                                            <div
+                                                                style="width: 1px; height: 24px; background: #e5e7eb; margin: 0 8px;">
+                                                            </div>
+
+                                                            <button onclick="openManageTiersModal(<%= festival.id %>)"
+                                                                title="Manage Tiers"
+                                                                style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; padding: 0 16px; height: 40px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                                                <span>🎯</span> Manage Tiers
+                                                            </button>
+                                                            <button onclick="openEditModal(<%= festival.id %>)"
+                                                                title="Edit Details"
+                                                                style="background: white; border: 1px solid #e5e7eb; color: #4b5563; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                                                ✏️
+                                                            </button>
+                                                            <button onclick="confirmDelete(<%= festival.id %>)"
+                                                                title="Delete Festival"
+                                                                style="background: white; border: 1px solid #fee2e2; color: #dc2626; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                                                🗑️
+                                                            </button>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Row: Details Grid -->
+                            <div
+                                style="padding: 20px 24px; background: #f9fafb; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; font-size: 14px;">
+
+                                <!-- Timing -->
+                                <div>
+                                    <span
+                                        style="display: block; color: #9ca3af; font-size: 11px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em;">FESTIVAL
+                                        DURATION</span>
+                                    <div
+                                        style="color: #374151; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                        <span>🗓️</span>
+                                        <%= new Date(festival.start_time).toLocaleDateString() %>
+                                            <span style="color: #9ca3af;">→</span>
+                                            <%= new Date(festival.end_time).toLocaleDateString() %>
+                                    </div>
+                                </div>
+
+                                <!-- Pre-booking -->
+                                <div>
+                                    <span
+                                        style="display: block; color: #9ca3af; font-size: 11px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em;">PRE-BOOKING</span>
+                                    <div
+                                        style="color: #374151; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                        <span>🎟️</span>
+                                        ₹<%= festival.pre_booking_amount %>
+                                            <span
+                                                style="background: #e5e7eb; color: #4b5563; padding: 2px 8px; border-radius: 6px; font-size: 11px; text-transform: uppercase;">
+                                                <%= festival.pre_booking_type %>
+                                            </span>
+                                    </div>
+                                    <div style="color: #6b7280; font-size: 12px; margin-top: 4px; padding-left: 24px;">
+                                        <%= new Date(festival.pre_booking_start_time).toLocaleDateString() %> - <%= new
+                                                Date(festival.pre_booking_end_time).toLocaleDateString() %>
+                                    </div>
+                                </div>
+
+                                <!-- Stats -->
+                                <div>
+                                    <span
+                                        style="display: block; color: #9ca3af; font-size: 11px; font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em;">LIVE
+                                        STATS</span>
+                                    <div style="display: flex; gap: 16px;">
+                                        <div title="Participants" style="display: flex; align-items: center; gap: 4px;">
+                                            <span style="color: #6b7280;">👥</span>
+                                            <strong style="color: #111827;">
+                                                <%= festival.statistics?.total_participants || 0 %>
+                                            </strong>
+                                        </div>
+                                        <div title="Active Tiers" style="display: flex; align-items: center; gap: 4px;">
+                                            <span style="color: #6b7280;">🎯</span>
+                                            <strong style="color: #111827;">
+                                                <%= festival.statistics?.total_tiers || 0 %>
+                                            </strong>
+                                        </div>
+                                        <div title="Winners Declared"
+                                            style="display: flex; align-items: center; gap: 4px;">
+                                            <span style="color: #6b7280;">🏆</span>
+                                            <strong style="color: #111827;">
+                                                <%= festival.statistics?.total_winners || 0 %>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <% }); %>
+        </div>
+
+        <!-- ================= MODALS ================= -->
+
+        <!-- Create Festival Modal -->
+        <div id="createFestivalModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:1000;">
+            <div
+                style="background:white; width:90%; max-width:800px; margin:40px auto; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); max-height:90vh; overflow-y:auto;">
+                <div
+                    style="padding:20px 24px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background: #f9fafb;">
+                    <h3 style="margin:0; font-size: 18px; font-weight: 700; color: #111827;">🎯 Create Mega Offer
+                        Festival</h3>
+                    <button onclick="document.getElementById('createFestivalModal').style.display='none'"
+                        style="background:none; border:none; font-size:24px; color: #9ca3af; cursor:pointer; padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <form action="/admin/mega-offer/create" method="POST" style="padding:24px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div style="grid-column: span 2;">
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                Name *</label>
+                            <input type="text" name="name" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; outline: none; transition: border-color 0.2s;"
+                                placeholder="e.g., Black Friday 2025">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Description</label>
+                            <textarea name="description" rows="3" placeholder="Brief description of the festival..."
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; resize:vertical; outline: none;"></textarea>
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                Start *</label>
+                            <input type="datetime-local" name="pre_booking_start_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                End *</label>
+                            <input type="datetime-local" name="pre_booking_end_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                Start *</label>
+                            <input type="datetime-local" name="start_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                End *</label>
+                            <input type="datetime-local" name="end_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                Amount *</label>
+                            <input type="number" name="pre_booking_amount" min="0" step="0.01" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;"
+                                placeholder="49">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Amount
+                                Type *</label>
+                            <select name="pre_booking_type" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background: white;">
+                                <option value="fixed">Fixed Amount (₹)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="text-align:right; border-top:1px solid #e5e7eb; padding-top:20px; margin-top:24px;">
+                        <button type="button"
+                            onclick="document.getElementById('createFestivalModal').style.display='none'"
+                            style="background:white; color:#374151; border:1px solid #d1d5db; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:12px; font-weight: 500;">Cancel</button>
+                        <button type="submit"
+                            style="background:#4f46e5; color:white; border:none; padding:10px 24px; border-radius:8px; cursor:pointer; font-weight:600; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);">Create
+                            Festival</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Festival Modal -->
+        <div id="editFestivalModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:1000;">
+            <div
+                style="background:white; width:90%; max-width:800px; margin:40px auto; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); max-height:90vh; overflow-y:auto;">
+                <div
+                    style="padding:20px 24px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background: #f9fafb;">
+                    <h3 style="margin:0; font-size: 18px; font-weight: 700; color: #111827;">✏️ Edit Festival</h3>
+                    <button onclick="document.getElementById('editFestivalModal').style.display='none'"
+                        style="background:none; border:none; font-size:24px; color: #9ca3af; cursor:pointer; padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <form id="editFestivalForm" method="POST" style="padding:24px;">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div style="grid-column: span 2;">
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                Name *</label>
+                            <input type="text" id="edit_name" name="name" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Description</label>
+                            <textarea id="edit_description" name="description" rows="3"
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; resize:vertical;"></textarea>
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                Start *</label>
+                            <input type="datetime-local" id="edit_pre_booking_start_time" name="pre_booking_start_time"
+                                required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                End *</label>
+                            <input type="datetime-local" id="edit_pre_booking_end_time" name="pre_booking_end_time"
+                                required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                Start *</label>
+                            <input type="datetime-local" id="edit_start_time" name="start_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Festival
+                                End *</label>
+                            <input type="datetime-local" id="edit_end_time" name="end_time" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Pre-booking
+                                Amount *</label>
+                            <input type="number" id="edit_pre_booking_amount" name="pre_booking_amount" min="0"
+                                step="0.01" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Amount
+                                Type *</label>
+                            <select id="edit_pre_booking_type" name="pre_booking_type" required
+                                style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background: white;">
+                                <option value="fixed">Fixed Amount (₹)</option>
+                                <option value="percentage">Percentage (%)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="text-align:right; border-top:1px solid #e5e7eb; padding-top:20px; margin-top:24px;">
+                        <button type="button"
+                            onclick="document.getElementById('editFestivalModal').style.display='none'"
+                            style="background:white; color:#374151; border:1px solid #d1d5db; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:12px; font-weight: 500;">Cancel</button>
+                        <button type="submit"
+                            style="background:#f59e0b; color:white; border:none; padding:10px 24px; border-radius:8px; cursor:pointer; font-weight:600;">💾
+                            Update Festival</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manage Tiers Modal -->
+        <div id="manageTiersModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:1000;">
+            <div
+                style="background:white; width:90%; max-width:900px; margin:40px auto; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); max-height:90vh; overflow-y:auto;">
+                <div
+                    style="padding:20px 24px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background: #f9fafb;">
+                    <h3 style="margin:0; font-size: 18px; font-weight: 700; color: #111827;">🎯 Manage Tiers</h3>
+                    <button onclick="document.getElementById('manageTiersModal').style.display='none'"
+                        style="background:none; border:none; font-size:24px; color: #9ca3af; cursor:pointer; padding: 0; line-height: 1;">×</button>
+                </div>
+
+                <div style="padding:24px;">
+                    <!-- Add Tier Form -->
+                    <form id="addTierForm" method="POST"
+                        style="background:#f3f4f6; padding:20px; border-radius:12px; margin-bottom:24px; border: 1px solid #e5e7eb;">
+                        <h4 style="margin:0 0 16px 0; font-size: 16px; color: #111827;">➕ Add New Tier</h4>
+                        <div
+                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:16px;">
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Tier
+                                    Name *</label>
+                                <input type="text" name="tier_name" placeholder="Tier 1 - Gold" required
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Entry
+                                    Fee (₹) *</label>
+                                <input type="number" name="entry_fee" placeholder="1" min="0" step="0.01" required
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Discount
+                                    % *</label>
+                                <input type="number" name="discount_percent" placeholder="50" min="1" max="100" required
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Max
+                                    Winners</label>
+                                <input type="number" name="max_winners" placeholder="100" min="1"
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Order
+                                    *</label>
+                                <input type="number" name="tier_order" placeholder="1" min="1" required
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px;">
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Tier
+                                    Start Time</label>
+                                <input type="datetime-local" name="start_time"
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Tier
+                                    End Time</label>
+                                <input type="datetime-local" name="end_time"
+                                    style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px;">
+                            </div>
+                        </div>
+                        <div style="margin-top:16px;">
+                            <label
+                                style="display:block; margin-bottom:4px; font-size: 12px; font-weight: 600; color: #6b7280;">Status</label>
+                            <select name="status"
+                                style="width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; background: white;">
+                                <option value="pending">Pending</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                </div>
+                <div style="margin-top:16px; text-align:right;">
+                    <button type="submit"
+                        style="background:#10b981; color:white; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight: 600; font-size: 13px;">➕
+                        Add Tier</button>
+                </div>
+                </form>
+
+                <!-- Existing Tiers List -->
+                <div id="tiersList" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:1000;">
+        <div
+            style="background:white; width:90%; max-width:400px; margin:15% auto; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1);">
+            <div style="padding:30px; text-align:center;">
+                <div
+                    style="width: 60px; height: 60px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 20px auto;">
+                    🗑️</div>
+                <h3 style="margin:0 0 10px 0; color: #111827; font-size: 20px; font-weight: 700;">Delete Festival
+                </h3>
+                <p style="color:#6b7280; margin-bottom:24px; font-size: 15px; line-height: 1.5;">
+                    Are you sure you want to delete <strong id="deleteFestivalName"
+                        style="color: #111827;"></strong>?<br>
+                    This action cannot be undone.
+                </p>
+
+                <div style="display:flex; gap:12px; justify-content:center;">
+                    <button onclick="document.getElementById('deleteConfirmModal').style.display='none'"
+                        style="background:white; color:#374151; border:1px solid #d1d5db; padding:10px 24px; border-radius:8px; cursor:pointer; font-weight: 500;">Cancel</button>
+                    <form id="deleteFestivalForm" method="POST" style="display:inline;">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit"
+                            style="background:#dc2626; color:white; border:none; padding:10px 24px; border-radius:8px; cursor:pointer; font-weight:600;">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Tier Modal -->
+    <div id="editTierModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index:2000;">
+        <div
+            style="background:white; width:90%; max-width:600px; margin:40px auto; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1); max-height:90vh; overflow-y:auto;">
+            <div
+                style="padding:20px 24px; border-bottom:1px solid #e5e7eb; display:flex; justify-content:space-between; align-items:center; background: #f9fafb;">
+                <h3 style="margin:0; font-size: 18px; font-weight: 700; color: #111827;">✏️ Edit Tier</h3>
+                <button onclick="document.getElementById('editTierModal').style.display='none'"
+                    style="background:none; border:none; font-size:24px; color: #9ca3af; cursor:pointer; padding: 0; line-height: 1;">×</button>
+            </div>
+
+            <form id="editTierForm" method="POST" style="padding:24px;">
+                <!-- Use method override if needed, or just PUT via fetch, but standard forms use POST usually with override or just POST -->
+                <!-- Assuming backend accepts POST or we use method override middleware. The route is PUT, so we need to handle that. -->
+                <!-- If backend uses method-override, we can add ?_method=PUT. Let's assume standard REST and use fetch for PUT or hidden input if supported. -->
+                <!-- For simplicity in EJS without complex frontend JS, I'll use fetch to submit this form to handle PUT. -->
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div style="grid-column: span 2;">
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Tier
+                            Name *</label>
+                        <input type="text" id="edit_tier_name" name="tier_name" required
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Entry
+                            Fee (₹) *</label>
+                        <input type="number" id="edit_tier_entry_fee" name="entry_fee" min="0" step="0.01" required
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Discount
+                            % *</label>
+                        <input type="number" id="edit_tier_discount_percent" name="discount_percent" min="1" max="100"
+                            required
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Max
+                            Winners</label>
+                        <input type="number" id="edit_tier_max_winners" name="max_winners" min="1"
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Order
+                            *</label>
+                        <input type="number" id="edit_tier_order" name="tier_order" min="1" required
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Start
+                            Time</label>
+                        <input type="datetime-local" id="edit_tier_start_time" name="start_time"
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">End
+                            Time</label>
+                        <input type="datetime-local" id="edit_tier_end_time" name="end_time"
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label
+                            style="display:block; margin-bottom:6px; font-weight:600; font-size: 14px; color: #374151;">Status</label>
+                        <select id="edit_tier_status" name="status"
+                            style="width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background: white;">
+                            <option value="pending">Pending</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="text-align:right; border-top:1px solid #e5e7eb; padding-top:20px; margin-top:24px;">
+                    <button type="button" onclick="document.getElementById('editTierModal').style.display='none'"
+                        style="background:white; color:#374151; border:1px solid #d1d5db; padding:10px 20px; border-radius:8px; cursor:pointer; margin-right:12px; font-weight: 500;">Cancel</button>
+                    <button type="submit"
+                        style="background:#f59e0b; color:white; border:none; padding:10px 24px; border-radius:8px; cursor:pointer; font-weight:600;">💾
+                        Update Tier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+
+    <script>
+        // Append new functions to the existing script block or add a new one. 
+        // Since I can't easily append to the top script block without reading it all, I'll add a new script block here at the end.
+
+        function openEditTierModal(tierId) {
+            try {
+                // Find tier in global data
+                let tier = null;
+                // We need to search through all festivals to find the tier
+                for (const f of window.festivalsData) {
+                    if (f.tiers) {
+                        const found = f.tiers.find(t => t.id === tierId);
+                        if (found) {
+                            tier = found;
+                            break;
+                        }
+                    }
+                }
+
+                if (!tier) {
+                    console.error("Tier not found:", tierId);
+                    return;
+                }
+
+                document.getElementById('edit_tier_name').value = tier.tier_name;
+                document.getElementById('edit_tier_entry_fee').value = tier.entry_fee;
+                document.getElementById('edit_tier_discount_percent').value = tier.discount_percent;
+                document.getElementById('edit_tier_max_winners').value = tier.max_winners || '';
+                document.getElementById('edit_tier_order').value = tier.tier_order;
+                document.getElementById('edit_tier_status').value = tier.status;
+
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toISOString().slice(0, 16);
+                };
+
+                document.getElementById('edit_tier_start_time').value = formatDate(tier.start_time);
+                document.getElementById('edit_tier_end_time').value = formatDate(tier.end_time);
+
+                // Handle Form Submit
+                const form = document.getElementById('editTierForm');
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const data = Object.fromEntries(formData.entries());
+
+                    try {
+                        const response = await fetch(`/api/mega-offer/tier/${tierId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('Tier updated successfully!');
+                            location.reload();
+                        } else {
+                            alert('Failed to update tier: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error updating tier:', error);
+                        alert('Error updating tier');
+                    }
+                };
+
+                document.getElementById('editTierModal').style.display = 'block';
+                // Close manage tiers modal to avoid overlap/confusion, or keep it open? 
+                // Better to close it or stack them. Let's stack them but ensure z-index is higher.
+                // editTierModal z-index is 2000, manageTiersModal is 1000. So it should be fine.
+
+            } catch (e) {
+                console.error("Error opening edit tier modal:", e);
+            }
+        }
+    </script>
